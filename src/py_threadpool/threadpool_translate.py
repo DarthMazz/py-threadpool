@@ -1,17 +1,29 @@
 import time
-import boto3
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 
+import boto3
+from botocore.config import Config
+
 # ロギング設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+custom_config = Config(
+    retries={
+        # 'max_attempts': 5,  # 必要に応じてデフォルトの3から変更
+        'mode': 'standard'
+    },
+    connect_timeout=60,
+    read_timeout=60,
+)
 
 # Bedrockクライアントの初期化
 # 必要に応じてregion_nameやその他の設定を調整してください
 bedrock_runtime = boto3.client(
     service_name='bedrock-runtime',
-    region_name='ap-northeast-1' # 例: Bedrockが利用可能なリージョンを指定
+    region_name='ap-northeast-1', # 例: Bedrockが利用可能なリージョンを指定
+    config=custom_config
 )
 
 def translate_text(text: str, source_lang: str, target_lang: str, model_id: str = "apac.amazon.nova-pro-v1:0") -> str:
@@ -89,7 +101,7 @@ if __name__ == "__main__":
         "日本語のテキストも翻訳できるか試してみます。",
         "これは並列処理の効率を示すためのものです。",
         "クラウドサービスは現代のソフトウェア開発に不可欠です。",
-        "機械学習モデルは日々進化しています。"
+        "機械学習モデルは日々進化しています。",
     ]
 
     source_language = "en"
@@ -99,7 +111,7 @@ if __name__ == "__main__":
     
     # 並列ワーカー数を調整して試してみてください
     # Bedrockのスループット制限やネットワーク帯域も考慮に入れる必要があります
-    num_workers = 1
+    num_workers = 10
     
     translated_sentences = parallel_translate(texts_to_translate, source_language, target_language, max_workers=num_workers)
 
